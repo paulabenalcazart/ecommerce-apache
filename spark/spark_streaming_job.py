@@ -1,7 +1,7 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
-from schemas import ecommerce_schema
-from kafka_reader import read_kafka_stream
+from schemas import event_schema as ecommerce_schema
+from kafka_reader import read_kafka_events as  read_kafka_stream
 from metrics_sales import (
     filter_purchases,
     sales_per_minute,
@@ -20,10 +20,14 @@ from sinks import write_to_console, write_to_hdfs
 # --------------------------------------------------
 # Inicializar Spark
 # --------------------------------------------------
+# Para tu máquina local:
 spark = SparkSession.builder \
     .appName("EcommerceStreaming") \
-    .master("local[*]") \   # reemplaza por "spark://<master>:7077" si es standalone cluster
+    .master("local[*]") \
     .getOrCreate()
+
+# Para standalone cluster, tu compañero solo tendría que cambiar la línea anterior por:
+# .master("spark://<master_hostname>:7077") 
 
 spark.sparkContext.setLogLevel("WARN")
 
@@ -32,12 +36,12 @@ spark.sparkContext.setLogLevel("WARN")
 # --------------------------------------------------
 events_df = read_kafka_stream(
     spark,
-    topic="orders,cart_events,page_views",
-    schema=ecommerce_schema
+    bootstrap_servers="localhost:9092",
+    topics="orders,cart_events,page_views"
 )
 
 # --------------------------------------------------
-# METRICAS DE VENTAS
+# MÉTRICAS DE VENTAS
 # --------------------------------------------------
 purchases_df = filter_purchases(events_df)
 
@@ -46,7 +50,7 @@ avg_ticket_df = avg_ticket_per_user(purchases_df)
 sales_by_product_df = sales_by_product(purchases_df)
 
 # --------------------------------------------------
-# METRICAS DE COMPORTAMIENTO
+# MÉTRICAS DE COMPORTAMIENTO
 # --------------------------------------------------
 views_df = filter_views(events_df)
 cart_df = filter_cart_events(events_df)
@@ -79,4 +83,3 @@ queries.append(write_to_hdfs(conversion_df, "/ecommerce/conversion/", "/ecommerc
 # --------------------------------------------------
 for q in queries:
     q.awaitTermination()
-

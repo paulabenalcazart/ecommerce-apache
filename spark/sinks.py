@@ -4,9 +4,10 @@ from pyspark.sql import DataFrame
 # Escribir stream a consola (debug)
 # --------------------------------------------------
 def write_to_console(df: DataFrame, query_name: str):
+    output_mode = "complete" if ds.isStreaming and df.columns else "append"
     return (
         df.writeStream
-        .outputMode("complete")
+        .outputMode(output_mode)
         .format("console")
         .option("truncate", False)
         .queryName(query_name)
