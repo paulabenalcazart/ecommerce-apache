@@ -1,5 +1,7 @@
 from pyspark.sql import SparkSession
 
+from pyspark.sql.functions import to_date, col
+
 from kafka_reader import read_kafka_events
 
 from metrics_sales import (
@@ -53,6 +55,10 @@ events_df = read_kafka_events(
 purchases_df = filter_purchases(events_df)
 views_df = filter_views(events_df)
 cart_df = filter_cart_events(events_df)
+
+purchases_df = purchases_df.withColumn("fecha", to_date(col("timestamp")))
+views_df = views_df.withColumn("fecha", to_date(col("timestamp")))
+cart_df = cart_df.withColumn("fecha", to_date(col("timestamp")))
 
 # ==================================================
 # MÉTRICAS DE VENTAS
@@ -128,6 +134,22 @@ queries.append(
         purchases_df,
         "/ecommerce/orders/",
         "/ecommerce/checkpoints/orders"
+    )
+)
+
+queries.append(
+    write_raw_to_hdfs(
+	views_df,
+	"/ecommerce/views/",
+	"/ecommerce/checkpoints/view"
+    )
+)
+
+queries.append(
+    write_raw_to_hdfs(
+	cart_df,
+	"/ecommerce/cart",
+	"/ecommerce/checkpoints/cart"
     )
 )
 

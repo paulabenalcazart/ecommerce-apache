@@ -33,6 +33,7 @@ def write_raw_to_hdfs(
         df.writeStream
           .format("parquet")
           .outputMode("append")
+          .partitionBy("fecha")
           .option("path", path)
           .option("checkpointLocation", checkpoint_path)
           .start()
