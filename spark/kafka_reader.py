@@ -1,4 +1,4 @@
-from pyspark.sql.functions import from_json, col
+from pyspark.sql.functions import from_json, col, to_timestamp
 from pyspark.sql import DataFrame
 from schemas import event_schema
 
@@ -27,6 +27,7 @@ def read_kafka_events(
             from_json(col("value").cast("string"), event_schema).alias("data")
         )
         .select("data.*")
+	.withColumn("timestamp", to_timestamp(col("timestamp")))
     )
 
     # Filtrado basico de eventos validos

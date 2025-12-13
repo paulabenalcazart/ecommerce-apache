@@ -13,7 +13,7 @@ event_schema = StructType([
     StructField("category", StringType(), True),
     StructField("event_type", StringType(), True),  # view | add_to_cart | purchase
     StructField("price", DoubleType(), True),
-    StructField("timestamp", TimestampType(), True),
+    StructField("timestamp", StringType(), True),
 
     # Informacion de la tienda (opcional)
     StructField("store_id", StringType(), True),

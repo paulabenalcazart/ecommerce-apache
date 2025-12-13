@@ -20,6 +20,7 @@ def filter_purchases(events_df: DataFrame) -> DataFrame:
 def sales_per_minute(purchases_df: DataFrame) -> DataFrame:
     return (
         purchases_df
+	.withWatermark("timestamp", "2 minutes")
         .groupBy(
             window(col("timestamp"), "1 minute")
         )
