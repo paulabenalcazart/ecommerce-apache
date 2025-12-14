@@ -36,11 +36,13 @@ hdfs/create_hdfs_dirs.sh
 
 Estructura creada:
 
+```bash
 /ecommerce/
 ├── orders
 ├── views
 ├── cart
 └── checkpoints
+```
 
 ## 4️⃣ Crear y activar venv del Producer
 
