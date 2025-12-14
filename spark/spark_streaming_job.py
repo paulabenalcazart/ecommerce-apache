@@ -1,6 +1,5 @@
 from pyspark.sql import SparkSession
-
-from pyspark.sql.functions import to_date, col
+from pyspark.sql.functions import col, to_date
 
 from kafka_reader import read_kafka_events
 
@@ -22,7 +21,8 @@ from metrics_behavior import (
 from sinks import (
     write_to_console,
     write_raw_to_hdfs,
-    write_agg_to_hdfs
+    write_agg_to_hdfs,
+    write_top_products_to_hdfs
 )
 
 # ==================================================
@@ -32,7 +32,7 @@ from sinks import (
 spark = (
     SparkSession.builder
     .appName("EcommerceStreaming")
-    .master("local[*]")  # tu compañero puede cambiar a spark://host:7077
+    .master("local[*]")
     .getOrCreate()
 )
 
@@ -53,19 +53,23 @@ events_df = read_kafka_events(
 # ==================================================
 
 purchases_df = filter_purchases(events_df)
-views_df = filter_views(events_df)
-cart_df = filter_cart_events(events_df)
+views_df     = filter_views(events_df)
+cart_df      = filter_cart_events(events_df)
+
+# ==================================================
+# PARTICIÓN POR FECHA
+# ==================================================
 
 purchases_df = purchases_df.withColumn("fecha", to_date(col("timestamp")))
-views_df = views_df.withColumn("fecha", to_date(col("timestamp")))
-cart_df = cart_df.withColumn("fecha", to_date(col("timestamp")))
+views_df     = views_df.withColumn("fecha", to_date(col("timestamp")))
+cart_df      = cart_df.withColumn("fecha", to_date(col("timestamp")))
 
 # ==================================================
 # MÉTRICAS DE VENTAS
 # ==================================================
 
 sales_per_minute_df = sales_per_minute(purchases_df)
-avg_ticket_df = avg_ticket_per_user(purchases_df)
+avg_ticket_df       = avg_ticket_per_user(purchases_df)
 sales_by_product_df = sales_by_product(purchases_df)
 
 # ==================================================
@@ -73,13 +77,13 @@ sales_by_product_df = sales_by_product(purchases_df)
 # ==================================================
 
 views_by_category_df = views_by_category(views_df)
-top_products_df = top_products_by_views(views_df)
+top_products_df      = top_products_by_views(views_df)
 
-# JOIN ENTRE STREAMS (carrito + compra)
+# Conversión vista → carrito → compra
 conversion_df = conversion_funnel(events_df)
 
 # ==================================================
-# SALIDAS A CONSOLA (DEBUG / VISUALIZACIÓN)
+# SALIDA A CONSOLA (SOLO 1 QUERY - DEBUG)
 # ==================================================
 
 queries = []
@@ -92,43 +96,11 @@ queries.append(
     )
 )
 
-queries.append(
-    write_to_console(
-        avg_ticket_df,
-        query_name="AvgTicketPerUser",
-        output_mode="update"
-    )
-)
-
-queries.append(
-    write_to_console(
-        views_by_category_df,
-        query_name="ViewsByCategory",
-        output_mode="update"
-    )
-)
-
-queries.append(
-    write_to_console(
-        top_products_df,
-        query_name="TopProducts",
-        output_mode="complete"
-    )
-)
-
-queries.append(
-    write_to_console(
-        conversion_df,
-        query_name="ConversionFunnel",
-        output_mode="append"
-    )
-)
-
 # ==================================================
 # SALIDAS A HDFS
 # ==================================================
 
-# -------- STREAM CRUDO (append) --------
+# -------- STREAM CRUDO (ORDERS) --------
 queries.append(
     write_raw_to_hdfs(
         purchases_df,
@@ -137,23 +109,26 @@ queries.append(
     )
 )
 
+# -------- STREAM CRUDO (VIEWS) --------
 queries.append(
     write_raw_to_hdfs(
-	views_df,
-	"/ecommerce/views/",
-	"/ecommerce/checkpoints/view"
+        views_df,
+        "/ecommerce/views/",
+        "/ecommerce/checkpoints/views"
     )
 )
 
+# -------- STREAM CRUDO (CART) --------
 queries.append(
     write_raw_to_hdfs(
-	cart_df,
-	"/ecommerce/cart",
-	"/ecommerce/checkpoints/cart"
+        cart_df,
+        "/ecommerce/cart/",
+        "/ecommerce/checkpoints/cart"
     )
 )
 
-# -------- AGREGACIONES (foreachBatch) --------
+# -------- AGREGACIONES --------
+
 queries.append(
     write_agg_to_hdfs(
         sales_per_minute_df,
@@ -175,6 +150,14 @@ queries.append(
         views_by_category_df,
         "/ecommerce/views_by_category/",
         "/ecommerce/checkpoints/views_by_category"
+    )
+)
+
+queries.append(
+    write_top_products_to_hdfs(
+        top_products_df,
+        "/ecommerce/top_products/",
+        "/ecommerce/checkpoints/top_products"
     )
 )
 

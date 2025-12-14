@@ -44,8 +44,6 @@ def top_products_by_views(views_df: DataFrame) -> DataFrame:
         views_df
         .groupBy("product_id")
         .agg(count("*").alias("views_count"))
-        .orderBy(desc("views_count"))
-        .limit(5)
     )
 
 

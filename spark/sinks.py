@@ -1,4 +1,6 @@
+
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import desc
 
 # ==================================================
 # ESCRIBIR STREAM A CONSOLA (DEBUG)
@@ -55,5 +57,28 @@ def write_agg_to_hdfs(df, path, checkpoint_path):
                     .mode("append")
                     .parquet(path)
           )
+          .start()
+    )
+def write_top_products_to_hdfs(
+    df: DataFrame,
+    path: str,
+    checkpoint_path: str,
+    top_n: int = 5
+):
+    def foreach_batch(batch_df, batch_id):
+        (
+            batch_df
+            .orderBy(desc("views_count"))  
+            .limit(top_n)
+            .write
+            .mode("overwrite")           
+            .parquet(path)
+        )
+
+    return (
+        df.writeStream
+          .outputMode("complete")         
+          .option("checkpointLocation", checkpoint_path)
+          .foreachBatch(foreach_batch)
           .start()
     )
