@@ -44,19 +44,16 @@ def write_raw_to_hdfs(
 # ESCRIBIR AGREGACIONES A HDFS (foreachBatch)
 # ==================================================
 
-def write_agg_to_hdfs(
-    df: DataFrame,
-    path: str,
-    checkpoint_path: str,
-    mode: str = "overwrite"  # overwrite es lo normal para métricas
-):
+def write_agg_to_hdfs(df, path, checkpoint_path):
     return (
         df.writeStream
-          .outputMode("update")  # o "complete"
+          .outputMode("update")
           .option("checkpointLocation", checkpoint_path)
           .foreachBatch(
               lambda batch_df, batch_id:
-                  batch_df.write.mode(mode).parquet(path)
+                  batch_df.write
+                    .mode("append")
+                    .parquet(path)
           )
           .start()
     )

@@ -20,7 +20,7 @@ def filter_purchases(events_df: DataFrame) -> DataFrame:
 def sales_per_minute(purchases_df: DataFrame) -> DataFrame:
     return (
         purchases_df
-	.withWatermark("timestamp", "2 minutes")
+        .withWatermark("timestamp", "2 minutes")
         .groupBy(
             window(col("timestamp"), "1 minute")
         )
@@ -29,7 +29,6 @@ def sales_per_minute(purchases_df: DataFrame) -> DataFrame:
             count("*").alias("total_orders")
         )
     )
-
 
 # --------------------------------------------------
 # Promedio de ticket por usuario
