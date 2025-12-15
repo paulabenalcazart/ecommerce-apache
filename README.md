@@ -149,4 +149,4 @@ http://localhost:8501
 
 ## Poster Academico
 
-[Ver poster academico](docs/PROCESAMIENTO E-COMMERCE.pdf)
+[Ver poster academico](docs/poster.pdf)
