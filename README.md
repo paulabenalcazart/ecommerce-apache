@@ -142,3 +142,11 @@ http://localhost:8501
     Vistas por categoria
 
     Top productos mas vistos
+
+## Arquitectura del Sistema
+
+![Arquitectura](docs/architecture.png)
+
+## Poster Academico
+
+[Ver poster academico](docs/PROCESAMIENTO E-COMMERCE.pdf)
